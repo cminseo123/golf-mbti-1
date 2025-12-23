@@ -21,8 +21,6 @@
         .animate-bounce-slow { animation: bounce 2s infinite; }
         @keyframes bounce { 0%, 100% { transform: translateY(-5%); } 50% { transform: translateY(0); } }
         ::-webkit-scrollbar { display: none; }
-        /* 텍스트 외곽선 효과 */
-        .text-stroke { -webkit-text-stroke: 1px rgba(255,255,255,0.3); }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -53,7 +51,6 @@
             { id: 8, question: "라운딩 끝나고 뒤풀이 장소에서 나는?", options: [{ text: "아까 그 샷 봤어? 복기하면서 토론한다.", scores: { [SCORING_AXES.MENTAL]: 2, [SCORING_AXES.SOCIAL]: -1 } }, { text: "술잔 돌리고 분위기 주도한다. (오늘의 MC)", scores: { [SCORING_AXES.SOCIAL]: 3 } }, { text: "조용히 밥 먹으면서 다음 라운딩 잡는다.", scores: { [SCORING_AXES.SOCIAL]: 1 } }] }
         ];
 
-        // --- 결과 데이터 ---
         const RESULT_TYPES = {
             [`${SCORING_AXES.RISK}_${SCORING_AXES.SOCIAL}`]: {
                 title: "필드의 분위기 메이커, 핵인싸 장타러", subtitle: "버디보다 썰 푸는 게 더 즐거운 타입",
@@ -176,29 +173,31 @@
             };
 
             const saveResultImage = async () => {
+                // 숨겨진 인스타 카드 영역을 찾음
                 const element = document.getElementById("insta-card-hidden");
                 if (!element) return;
-                element.style.display = "flex"; // 캡처를 위해 잠시 보이게 설정
+                
+                // 화면 밖에서 잠깐 보이게 처리 (캡처를 위해)
+                element.style.display = "flex";
                 
                 try {
                     const canvas = await html2canvas(element, {
                         useCORS: true,
                         allowTaint: true,
-                        scale: 2, // 고화질
-                        backgroundColor: null // 투명 배경 지원
+                        scale: 2, // 고화질 저장
+                        backgroundColor: null
                     });
                     
                     const link = document.createElement('a');
-                    // 파일명 보기 좋게 정리
-                    const typeName = finalType.title.split(',')[1]?.trim().replace(/\s+/g, '_') || 'golf_type';
-                    link.download = `골프MBTI_${typeName}.png`;
+                    link.download = `golf_mbti_${finalType.title.split(',')[1].trim()}.png`;
                     link.href = canvas.toDataURL("image/png");
                     link.click();
                 } catch (err) {
                     console.error("이미지 저장 실패:", err);
-                    alert("이미지 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                    alert("이미지 저장 중 오류가 발생했습니다.");
                 } finally {
-                    element.style.display = "none"; // 캡처 후 다시 숨김
+                    // 다시 숨김
+                    element.style.display = "none";
                 }
             };
 
@@ -258,16 +257,15 @@
             }
 
             if (step === 'result' && finalType) {
-                // 캡처용 이미지 경로 (비디오는 같은 이름의 png로 대체)
+                // 캡처용 이미지 경로 계산 (비디오인 경우 png로 변경)
                 const captureImageSrc = finalType.isVideo ? finalType.image.replace('.mp4', '.png') : finalType.image;
-                const titleMain = finalType.title.split(',')[1] || finalType.title;
 
                 return (
                     <div className="min-h-screen bg-gray-100 py-8 px-4 flex justify-center">
-                        <div className="max-w-md w-full mb-10 relative">
+                        <div className="max-w-md w-full mb-10">
                             
-                            {/* === [보이는 결과 카드] === */}
-                            <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden relative z-10">
+                            {/* === 화면에 보이는 결과 카드 === */}
+                            <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden">
                                 <div className={`relative w-full aspect-square ${finalType.bgStyle} flex items-end justify-center overflow-hidden`}>
                                     <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/50 to-transparent z-10"></div>
                                     {finalType.isVideo ? 
@@ -276,7 +274,7 @@
                                     }
                                     <div className="relative z-20 text-center pb-6 px-4 w-full">
                                         <div className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs font-bold mb-2">My Golf DNA</div>
-                                        <h1 className="text-3xl font-black text-white drop-shadow-lg leading-tight break-keep">{titleMain}</h1>
+                                        <h1 className="text-3xl font-black text-white drop-shadow-lg leading-tight break-keep">{finalType.title.split(',')[1] || finalType.title}</h1>
                                     </div>
                                 </div>
                                 <div className="p-6 relative bg-white -mt-4 rounded-t-[2rem] z-30">
@@ -294,48 +292,44 @@
                                 </div>
                             </div>
 
-                            {/* === [숨겨진] 인스타 스토리용 카드 (새로운 디자인) === */}
-                            <div id="insta-card-hidden" style={{display: 'none'}} className="fixed top-0 left-0 w-[360px] h-[640px] z-[-1] relative overflow-hidden bg-black">
-                                {/* 배경 이미지 (꽉 채우기) */}
-                                <img src={captureImageSrc} className="absolute inset-0 w-full h-full object-cover opacity-90" />
-                                {/* 하단 그라데이션 (텍스트 가독성용) */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                            {/* === [숨겨진] 사진 저장용 카드 (인스타 스토리용) === */}
+                            {/* 평소엔 display:none 상태. 저장 버튼 누를 때만 잠깐 그려서 캡처함 */}
+                            <div id="insta-card-hidden" style={{display: 'none'}} className={`fixed top-0 left-0 w-[360px] h-[640px] z-[-1] flex-col items-center overflow-hidden ${finalType.bgStyle}`}>
+                                {/* 배경 이미지 (무조건 static 이미지 사용) */}
+                                <img src={captureImageSrc} className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-overlay" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
                                 
-                                {/* 상단 로고 */}
-                                <div className="absolute top-8 left-0 w-full text-center">
-                                    <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/80 text-[10px] font-black tracking-[0.3em]">GOLF MBTI TEST</div>
-                                </div>
+                                {/* 컨텐츠 */}
+                                <div className="relative z-10 w-full h-full flex flex-col justify-between p-8 pt-20 pb-12">
+                                    <div className="text-center">
+                                        <div className="inline-block px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs font-bold mb-4 tracking-widest uppercase">My Golf MBTI</div>
+                                        <h1 className="text-4xl font-black text-white drop-shadow-xl leading-tight break-keep mb-4">{finalType.title.split(',')[1] || finalType.title}</h1>
+                                        <div className="w-16 h-1 bg-white/50 mx-auto rounded-full mb-6"></div>
+                                        <p className="text-white/90 text-lg font-medium">"{finalType.subtitle}"</p>
+                                    </div>
 
-                                {/* 하단 텍스트 컨텐츠 (유리 질감 카드 스타일) */}
-                                <div className="absolute bottom-0 left-0 w-full p-8 flex flex-col items-start text-left bg-white/10 backdrop-blur-xl border-t border-white/10 rounded-t-[2rem]">
-                                     {/* 뱃지 */}
-                                     <div className="inline-block px-3 py-1 rounded-full bg-white text-black text-xs font-black tracking-wider mb-3 shadow-lg">MY TYPE</div>
-
-                                     {/* 타이틀 (엄청 크고 두껍게) */}
-                                     <h1 className="text-5xl font-[900] text-white leading-none mb-4 drop-shadow-2xl text-stroke break-keep" style={{textShadow: '0 4px 12px rgba(0,0,0,0.5)'}}>
-                                        {titleMain}
-                                     </h1>
-
-                                     {/* 서브타이틀 */}
-                                     <p className="text-white/90 text-lg font-bold mb-6 leading-tight drop-shadow-lg">"{finalType.subtitle}"</p>
-
-                                     {/* 태그 (깔끔하게) */}
-                                     <div className="flex flex-wrap gap-2">
-                                         {finalType.tags.map((tag, i) => 
-                                            <span key={i} className="bg-black/30 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-bold border border-white/20">{tag}</span>
-                                         )}
-                                     </div>
+                                    <div className="flex flex-col items-center gap-4">
+                                        {/* 캐릭터 이미지 (중앙 강조) */}
+                                        <div className="w-48 h-48 rounded-full border-4 border-white/30 shadow-2xl overflow-hidden relative mb-4">
+                                             <img src={captureImageSrc} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex flex-wrap justify-center gap-2">
+                                            {finalType.tags.slice(0,3).map((tag, i) => 
+                                                <span key={i} className="bg-white/10 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold border border-white/10">{tag}</span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
                             {/* 하단 버튼 그룹 */}
                             <div className="flex gap-2 mt-6 sticky bottom-4 z-50 px-2">
-                                <button onClick={() => {setScores({ risk: 0, mental: 0, tech: 0, social: 0 }); setCurrentQIndex(0); setFinalType(null); setStep('intro');}} className="flex-1 bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold flex flex-col items-center justify-center text-xs shadow-sm transition-transform active:scale-95"><RefreshCw className="mb-1"/>다시 하기</button>
+                                <button onClick={() => {setScores({ risk: 0, mental: 0, tech: 0, social: 0 }); setCurrentQIndex(0); setFinalType(null); setStep('intro');}} className="flex-1 bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold flex flex-col items-center justify-center text-xs shadow-sm"><RefreshCw className="mb-1"/>다시 하기</button>
                                 
                                 {/* 사진 저장 버튼 */}
-                                <button onClick={saveResultImage} className="flex-1 bg-gradient-to-br from-pink-500 to-orange-400 text-white py-3 rounded-xl font-bold flex flex-col items-center justify-center text-xs shadow-lg transition-transform active:scale-95"><Instagram className="mb-1"/>카드 저장</button>
+                                <button onClick={saveResultImage} className="flex-1 bg-gradient-to-br from-pink-500 to-orange-400 text-white py-3 rounded-xl font-bold flex flex-col items-center justify-center text-xs shadow-lg"><Instagram className="mb-1"/>카드 저장</button>
                                 
-                                <button onClick={shareUrl} className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-bold flex flex-col items-center justify-center text-xs shadow-lg transition-transform active:scale-95"><Share2 className="mb-1"/>링크 복사</button>
+                                <button onClick={shareUrl} className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-bold flex flex-col items-center justify-center text-xs shadow-lg"><Share2 className="mb-1"/>링크 복사</button>
                             </div>
                         </div>
                     </div>
