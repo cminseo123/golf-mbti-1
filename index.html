@@ -168,8 +168,8 @@
                 let result = RESULT_TYPES[typeKey];
                 if (!result) {
                     result = { ...RESULT_TYPES.DEFAULT };
-                    if (sortedAxes[0][0] === SCORING_AXES.RISK) result.title = "본능적인 승부사 (공격형 밸런스)";
-                    if (sortedAxes[0][0] === SCORING_AXES.SOCIAL) result.title = "즐거운 긍정왕 (사교형 밸런스)";
+                    if (sortedAxes[0][0] === SCORING_AXES.RISK) result.title = "본능적인 승부사 (공격형)";
+                    if (sortedAxes[0][0] === SCORING_AXES.SOCIAL) result.title = "즐거운 긍정왕 (사교형)";
                 }
                 setTimeout(() => { setFinalType({ ...result, chartData: normalized }); setStep('result'); }, 2000);
             };
